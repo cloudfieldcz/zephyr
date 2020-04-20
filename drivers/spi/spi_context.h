@@ -178,16 +178,37 @@ static inline void spi_context_cs_configure(struct spi_context *ctx)
 	}
 }
 
+static int counter = 2;
+
 static inline void _spi_context_cs_control(struct spi_context *ctx,
 					   bool on, bool force_off)
 {
-	if (ctx->config && ctx->config->cs && ctx->config->cs->gpio_dev) {
+//        LOG_INF("pin %d value %d", ctx->config->cs->gpio_pin, on);
+        if (ctx->config && ctx->config->cs && ctx->config->cs->gpio_dev) {
 		if (on) {
+		        int value;
+		        if(counter) {
+                            LOG_INF("***");
+                            value = spi_context_cs_inactive_value(ctx);
+		            counter--;
+		        } else {
+		            value = spi_context_cs_active_value(ctx);
+			}
+
 			gpio_pin_set(ctx->config->cs->gpio_dev,
 				     ctx->config->cs->gpio_pin,
-				     spi_context_cs_active_value(ctx));
+				     value);
 			k_busy_wait(ctx->config->cs->delay);
 		} else {
+                        int value;
+                        if(counter) {
+                            LOG_INF("***");
+                            value = spi_context_cs_active_value(ctx);
+                            counter--;
+                        } else {
+                            value = spi_context_cs_inactive_value(ctx);
+                        }
+
 			if (!force_off &&
 			    ctx->config->operation & SPI_HOLD_ON_CS) {
 				return;
@@ -196,7 +217,7 @@ static inline void _spi_context_cs_control(struct spi_context *ctx,
 			k_busy_wait(ctx->config->cs->delay);
 			gpio_pin_set(ctx->config->cs->gpio_dev,
 				     ctx->config->cs->gpio_pin,
-				     spi_context_cs_inactive_value(ctx));
+				     value);
 		}
 	}
 }
