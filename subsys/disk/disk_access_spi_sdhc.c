@@ -72,6 +72,7 @@ static int sdhc_spi_trace(struct sdhc_spi_data *data, int dir, int err,
 /* Asserts or deasserts chip select */
 static void sdhc_spi_set_cs(struct sdhc_spi_data *data, int value)
 {
+	LOG_DBG("pin %d value %i", data->pin, value);
 	gpio_pin_set(data->cs, data->pin, value);
 }
 
@@ -145,13 +146,13 @@ static int sdhc_spi_tx_cmd(struct sdhc_spi_data *data, u8_t cmd, u32_t payload)
 {
 	u8_t buf[SDHC_CMD_SIZE];
 
-	LOG_DBG("cmd%d payload=%u", cmd, payload);
+	LOG_DBG("cmd%d payload=%x", cmd, payload);
 	sdhc_spi_trace(data, 0, 0, NULL, 0);
 
 	/* Encode the command */
 	buf[0] = SDHC_TX | (cmd & ~SDHC_START);
 	sys_put_be32(payload, &buf[1]);
-	buf[SDHC_CMD_BODY_SIZE] = crc7_be(0, buf, SDHC_CMD_BODY_SIZE);
+	buf[SDHC_CMD_BODY_SIZE] = crc7_be(0, buf, SDHC_CMD_BODY_SIZE) | 1;
 
 	return sdhc_spi_tx(data, buf, sizeof(buf));
 }
@@ -463,7 +464,7 @@ static int sdhc_spi_go_idle(struct sdhc_spi_data *data)
 	sdhc_spi_set_cs(data, 1);
 
 	/* Write the initial >= 74 clocks */
-	sdhc_spi_tx(data, sdhc_ones, 10);
+	sdhc_spi_tx(data, sdhc_ones, 20);
 
 	sdhc_spi_set_cs(data, 0);
 
@@ -519,7 +520,8 @@ static int sdhc_spi_detect(struct sdhc_spi_data *data)
 		err = sdhc_spi_go_idle(data);
 		if (err == 0) {
 			err = sdhc_spi_check_interface(data);
-			is_v2 = (err == 0) ? true : false;
+			//is_v2 = (err == 0) ? true : false;
+			is_v2 = true;
 			break;
 		}
 
