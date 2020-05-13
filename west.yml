@@ -21,6 +21,8 @@ manifest:
   remotes:
     - name: upstream
       url-base: https://github.com/zephyrproject-rtos
+    - name: cloudfield
+      url-base: git@github.com:cloudfieldcz
 
   #
   # Please add items below based on alphabetical order
@@ -101,8 +103,9 @@ manifest:
       revision: 6fcf61606d6012d2c44129edc033f59331e268bc
       path: modules/debug/segger
     - name: tinycbor
+      remote: cloudfield
       path: modules/lib/tinycbor
-      revision: 0fc68fceacd1efc1ce809c5880c380f3d98b7b6e
+      revision: cloudfield/stream_support
     - name: littlefs
       path: modules/fs/littlefs
       revision: fe9572dd5a9fcf93a249daa4233012692bd2881d
