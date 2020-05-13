@@ -103,7 +103,7 @@ enum sdhc_app_ext_cmd {
 /* Time to wait for the card to initialise */
 #define SDHC_INIT_TIMEOUT K_MSEC(5000)
 /* Time to wait for the card to respond or come ready */
-#define SDHC_READY_TIMEOUT K_MSEC(500)
+#define SDHC_READY_TIMEOUT K_MSEC(2000)
 
 enum sdhc_rsp_type {
 	SDHC_RSP_TYPE_NONE = 0U,
