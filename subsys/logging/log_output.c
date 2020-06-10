@@ -41,7 +41,13 @@ static const char *const colors[] = {
 	NULL                    /* dbg */
 };
 
+//MR
+#define ZB_LOGGING
+#ifndef ZB_LOGGING
 static u32_t freq;
+#else
+u32_t freq;
+#endif
 static u32_t timestamp_div;
 
 typedef int (*out_func_t)(int c, void *ctx);
@@ -122,7 +128,12 @@ static int out_func(int c, void *ctx)
 	return 0;
 }
 
+//MR
+#ifndef ZB_LOGGING
 static int print_formatted(const struct log_output *log_output,
+#else
+int print_formatted(const struct log_output *log_output,
+#endif
 			   const char *fmt, ...)
 {
 	va_list args;
@@ -162,6 +173,8 @@ void log_output_flush(const struct log_output *log_output)
 	log_output->control_block->offset = 0;
 }
 
+//MR
+#ifndef ZB_LOGGING
 static int timestamp_print(const struct log_output *log_output,
 			   u32_t flags, u32_t timestamp)
 {
@@ -222,6 +235,9 @@ static int timestamp_print(const struct log_output *log_output,
 
 	return length;
 }
+#else
+extern int timestamp_print(const struct log_output *log_output, u32_t flags, u32_t timestamp);
+#endif
 
 static void color_print(const struct log_output *log_output,
 			bool color, bool start, u32_t level)
