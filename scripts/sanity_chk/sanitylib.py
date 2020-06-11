@@ -514,9 +514,15 @@ class DeviceHandler(Handler):
                 time.sleep(0.1)
 
         try:
-            logger.debug('log_record_start')
+            readlist = [halt_fileno]
             while jlink.connected():
                 terminal_bytes = jlink.rtt_read(0, 1024)
+
+                readable, _, _ = select.select(readlist, [], [], 0.1)
+                if halt_fileno in readable:
+                    logger.debug('halted')
+                    break
+
                 if terminal_bytes:
                     msg = "".join(map(chr, terminal_bytes))
                     #logger.debug(msg)
@@ -529,7 +535,10 @@ class DeviceHandler(Handler):
                     log_out_fp.flush()
                     harness.handle(sl.rstrip())
 
-                time.sleep(0.1)
+                if harness.state:
+                    break
+
+                #time.sleep(0.1)
         except Exception as exc_err:
             logger.error(f"Exception:{exc_err}")
 
