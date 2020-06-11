@@ -443,6 +443,36 @@ class BinaryHandler(Handler):
         self.record(harness)
 
 
+def flash_callback(action, progress_string, percentage):
+    logger.debug(f'{action} {progress_string} {percentage}')
+
+def jlink_flash(fw_file, target_device):
+    try:
+        jlink = pylink.JLink()
+        time.sleep(0.5)
+        jlink.open()
+        jlink.set_tif(pylink.enums.JLinkInterfaces.SWD)
+        jlink.connect(target_device)
+        time.sleep(0.5)
+        core_id = jlink.core_id()
+        logger.debug(f"core_id:{core_id} core_id:0x{core_id:x}")
+        core_cpu = jlink.core_cpu()
+        logger.debug(f"core_cpu:{core_cpu} core_cpu:0x{core_cpu:x}")
+        device_id_0 = jlink.memory_read64(0x10000060, 1)
+        logger.debug(f"device_id_0:0x{device_id_0[0]:x}")
+        device_id_1 = jlink.memory_read64(0x10000064, 1)
+        logger.debug(f"device_id_1:0x{device_id_1[0]:x}")
+
+        jlink.reset(halt=True, ms=100)
+        jlink.flash_file(path=fw_file, addr=0, on_progress=flash_callback)
+        jlink.reset(halt=False, ms=100)
+        jlink.close()
+        return 0
+    except Exception as exc_err:
+        logger.error(f"Exception:{exc_err}")
+        return -1
+
+
 class DeviceHandler(Handler):
 
     def __init__(self, instance, type_str):
@@ -674,29 +704,32 @@ class DeviceHandler(Handler):
         #                      args=(ser, read_pipe, harness))
         # t.start()
 
-        d_log = "{}/device.log".format(self.instance.build_dir)
-        logger.debug('Flash command: %s', command)
-        try:
-            stdout = stderr = None
-            with subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
-                try:
-                    (stdout, stderr) = proc.communicate(timeout=30)
-                    logger.debug(stdout.decode())
+        # d_log = "{}/device.log".format(self.instance.build_dir)
+        # logger.debug('Flash command: %s', command)
+        # try:
+        #     stdout = stderr = None
+        #     with subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
+        #         try:
+        #             (stdout, stderr) = proc.communicate(timeout=30)
+        #             logger.debug(stdout.decode())
+        #
+        #             if proc.returncode != 0:
+        #                 self.instance.reason = "Device issue (Flash?)"
+        #                 with open(d_log, "w") as dlog_fp:
+        #                     dlog_fp.write(stderr.decode())
+        #         except subprocess.TimeoutExpired:
+        #             proc.kill()
+        #             (stdout, stderr) = proc.communicate()
+        #             self.instance.reason = "Device issue (Timeout)"
+        #
+        #     with open(d_log, "w") as dlog_fp:
+        #         dlog_fp.write(stderr.decode())
+        #
+        # except subprocess.CalledProcessError:
+        #     os.write(write_pipe, b'x')  # halt the thread
 
-                    if proc.returncode != 0:
-                        self.instance.reason = "Device issue (Flash?)"
-                        with open(d_log, "w") as dlog_fp:
-                            dlog_fp.write(stderr.decode())
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    (stdout, stderr) = proc.communicate()
-                    self.instance.reason = "Device issue (Timeout)"
-
-            with open(d_log, "w") as dlog_fp:
-                dlog_fp.write(stderr.decode())
-
-        except subprocess.CalledProcessError:
-            os.write(write_pipe, b'x')  # halt the thread
+        bin_file = self.build_dir + '/zephyr/zephyr.bin'
+        jlink_flash(bin_file, 'NRF52832_XXAA')
 
         t = threading.Thread(target=self.monitor_jlink, daemon=True, args=(read_pipe, harness))
         t.start()
