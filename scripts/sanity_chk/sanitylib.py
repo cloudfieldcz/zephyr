@@ -31,6 +31,8 @@ from distutils.spawn import find_executable
 from colorama import Fore
 import yaml
 
+import pylink
+
 try:
     import serial
 except ImportError:
@@ -493,6 +495,47 @@ class DeviceHandler(Handler):
 
         log_out_fp.close()
 
+    def monitor_jlink(self, halt_fileno, harness):
+        log_out_fp = open(self.log, "wt")
+
+        jlink = pylink.JLink()
+        jlink.open()
+        jlink.set_tif(pylink.enums.JLinkInterfaces.SWD)
+        jlink.connect('NRF52832_XXAA')
+        jlink.rtt_start(None)
+
+        while True:
+            try:
+                num_up = jlink.rtt_get_num_up_buffers()
+                num_down = jlink.rtt_get_num_down_buffers()
+                logger.debug("RTT started, %d up bufs, %d down bufs." % (num_up, num_down))
+                break
+            except pylink.errors.JLinkRTTException:
+                time.sleep(0.1)
+
+        try:
+            logger.debug('log_record_start')
+            while jlink.connected():
+                terminal_bytes = jlink.rtt_read(0, 1024)
+                if terminal_bytes:
+                    msg = "".join(map(chr, terminal_bytes))
+                    #logger.debug(msg)
+
+                    #sl = msg.decode('utf-8', 'ignore').lstrip()
+                    sl = msg.lstrip()
+                    logger.debug("DEVICE: {0}".format(sl.rstrip()))
+
+                    log_out_fp.write(sl)
+                    log_out_fp.flush()
+                    harness.handle(sl.rstrip())
+
+                time.sleep(0.1)
+        except Exception as exc_err:
+            logger.error(f"Exception:{exc_err}")
+
+        jlink.close()
+        log_out_fp.close()
+
     def device_is_available(self, device):
         for i in self.suite.connected_hardware:
             # if i['platform'] == device and i['available'] and i['serial']:
@@ -645,17 +688,20 @@ class DeviceHandler(Handler):
         except subprocess.CalledProcessError:
             os.write(write_pipe, b'x')  # halt the thread
 
+        t = threading.Thread(target=self.monitor_jlink, daemon=True, args=(read_pipe, harness))
+        t.start()
+
         if post_flash_script:
             self.run_custom_script(post_flash_script, 30)
 
+        t.join(self.timeout)
+        if t.is_alive():
+            logger.debug("Timed out while monitoring serial output on {}".format(self.instance.platform.name))
+            out_state = "timeout"
 
-        # t.join(self.timeout)
-        # if t.is_alive():
-        #     logger.debug("Timed out while monitoring serial output on {}".format(self.instance.platform.name))
-        #     out_state = "timeout"
-
-        # if ser.isOpen():
-        #     ser.close()
+        if serial_device:
+            if ser.isOpen():
+                ser.close()
 
         os.close(write_pipe)
         os.close(read_pipe)
@@ -681,7 +727,8 @@ class DeviceHandler(Handler):
         if post_script:
             self.run_custom_script(post_script, 30)
 
-        #self.make_device_available(serial_device)
+        if serial_device:
+            self.make_device_available(serial_device)
 
         self.record(harness)
 
