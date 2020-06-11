@@ -518,11 +518,6 @@ class DeviceHandler(Handler):
             while jlink.connected():
                 terminal_bytes = jlink.rtt_read(0, 1024)
 
-                readable, _, _ = select.select(readlist, [], [], 0.1)
-                if halt_fileno in readable:
-                    logger.debug('halted')
-                    break
-
                 if terminal_bytes:
                     msg = "".join(map(chr, terminal_bytes))
                     #logger.debug(msg)
@@ -538,7 +533,12 @@ class DeviceHandler(Handler):
                 if harness.state:
                     break
 
+                readable, _, _ = select.select(readlist, [], [], 0.1)
+                if halt_fileno in readable:
+                    logger.debug('halted')
+                    break
                 #time.sleep(0.1)
+
         except Exception as exc_err:
             logger.error(f"Exception:{exc_err}")
 
@@ -566,8 +566,9 @@ class DeviceHandler(Handler):
     def make_device_available(self, serial):
         with hw_map_local:
             for i in self.suite.connected_hardware:
-                if i['serial'] == serial:
-                    i['available'] = True
+                # if i['serial'] == serial:
+                #     i['available'] = True
+                i['available'] = True
 
     @staticmethod
     def run_custom_script(script, timeout):
@@ -736,8 +737,7 @@ class DeviceHandler(Handler):
         if post_script:
             self.run_custom_script(post_script, 30)
 
-        if serial_device:
-            self.make_device_available(serial_device)
+        self.make_device_available(serial_device)
 
         self.record(harness)
 
