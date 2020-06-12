@@ -444,7 +444,8 @@ class BinaryHandler(Handler):
 
 
 def flash_callback(action, progress_string, percentage):
-    logger.debug(f'{action} {progress_string} {percentage}')
+    pass
+    # logger.debug(f'{action} {progress_string} {percentage}')
 
 def jlink_flash(fw_file, target_device):
     try:
@@ -545,22 +546,28 @@ class DeviceHandler(Handler):
 
         try:
             readlist = [halt_fileno]
+            end = ""
             while jlink.connected():
                 terminal_bytes = jlink.rtt_read(0, 1024)
 
                 if terminal_bytes:
-                    msg = "".join(map(chr, terminal_bytes))
-                    #logger.debug(msg)
+                    log = "".join(map(chr, terminal_bytes))
+                    end += "".join(map(chr, terminal_bytes))
 
-                    #sl = msg.decode('utf-8', 'ignore').lstrip()
-                    sl = msg.lstrip()
-                    logger.debug("DEVICE: {0}".format(sl.rstrip()))
-
-                    log_out_fp.write(sl)
+                    logger.debug("DEVICE: {0}".format(log))
+                    log_out_fp.write(log)
                     log_out_fp.flush()
-                    harness.handle(sl.rstrip())
 
+                    while True:
+                        pos = end.find("\n")
+                        if pos == -1:
+                            break
+                        line = end[:pos]
+                        end = end[pos + 1:]
+                        harness.handle(line)
+                        # logger.debug("DEVICE: konec {0} ".format(line))
                 if harness.state:
+                    logger.debug("konec harness.state")
                     break
 
                 readable, _, _ = select.select(readlist, [], [], 0.1)
