@@ -104,6 +104,11 @@ config LOG_FUNC_NAME_PREFIX_DBG
 
 endmenu
 
+config LOG_EXTERNAL_TIMESTAMPS
+	bool "Use external timestamp implementation"
+	help
+		Use external timestamp functions.
+
 config LOG_PRINTK
 	bool "Enable processing of printk messages."
 	help

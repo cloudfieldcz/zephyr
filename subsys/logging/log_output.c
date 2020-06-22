@@ -42,8 +42,7 @@ static const char *const colors[] = {
 };
 
 //MR
-#define ZB_LOGGING
-#ifndef ZB_LOGGING
+#ifndef LOG_CONFIG_EXTERNAL_TIMESTAMPS
 static u32_t freq;
 #else
 u32_t freq;
@@ -129,7 +128,7 @@ static int out_func(int c, void *ctx)
 }
 
 //MR
-#ifndef ZB_LOGGING
+#ifndef LOG_CONFIG_EXTERNAL_TIMESTAMPS
 static int print_formatted(const struct log_output *log_output,
 #else
 int print_formatted(const struct log_output *log_output,
@@ -174,7 +173,7 @@ void log_output_flush(const struct log_output *log_output)
 }
 
 //MR
-#ifndef ZB_LOGGING
+#ifndef LOG_CONFIG_EXTERNAL_TIMESTAMPS
 static int timestamp_print(const struct log_output *log_output,
 			   u32_t flags, u32_t timestamp)
 {
