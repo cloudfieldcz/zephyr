@@ -565,7 +565,7 @@ static inline bool sdhc_retry_ok(struct sdhc_retry *retry)
 {
 	s32_t remain = retry->end - k_uptime_get_32();
 
-	if (retry->tries < SDHC_MIN_TRIES) {
+	if ((retry->tries < SDHC_MIN_TRIES) && (remain >= 0)) {
 		retry->tries++;
 		if (retry->sleep != 0U) {
 			k_sleep(retry->sleep);
