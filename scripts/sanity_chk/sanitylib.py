@@ -533,7 +533,7 @@ class DeviceHandler(Handler):
         jlink.open()
         jlink.set_tif(pylink.enums.JLinkInterfaces.SWD)
         jlink.connect('NRF52832_XXAA')
-        jlink.rtt_start(None)
+        jlink.rtt_start(0x20000000)
 
         while True:
             try:
