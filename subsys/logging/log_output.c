@@ -42,10 +42,10 @@ static const char *const colors[] = {
 };
 
 //MR
-#ifndef LOG_CONFIG_EXTERNAL_TIMESTAMPS
-static u32_t freq;
-#else
+#if CONFIG_LOG_EXTERNAL_TIMESTAMPS == 1
 u32_t freq;
+#else
+static u32_t freq;
 #endif
 static u32_t timestamp_div;
 
@@ -128,10 +128,10 @@ static int out_func(int c, void *ctx)
 }
 
 //MR
-#ifndef LOG_CONFIG_EXTERNAL_TIMESTAMPS
-static int print_formatted(const struct log_output *log_output,
-#else
+#if CONFIG_LOG_EXTERNAL_TIMESTAMPS == 1
 int print_formatted(const struct log_output *log_output,
+#else
+static int print_formatted(const struct log_output *log_output,
 #endif
 			   const char *fmt, ...)
 {
@@ -173,7 +173,9 @@ void log_output_flush(const struct log_output *log_output)
 }
 
 //MR
-#ifndef LOG_CONFIG_EXTERNAL_TIMESTAMPS
+#if CONFIG_LOG_EXTERNAL_TIMESTAMPS == 1
+extern int timestamp_print(const struct log_output *log_output, u32_t flags, u32_t timestamp);
+#else
 static int timestamp_print(const struct log_output *log_output,
 			   u32_t flags, u32_t timestamp)
 {
@@ -234,8 +236,6 @@ static int timestamp_print(const struct log_output *log_output,
 
 	return length;
 }
-#else
-extern int timestamp_print(const struct log_output *log_output, u32_t flags, u32_t timestamp);
 #endif
 
 static void color_print(const struct log_output *log_output,
