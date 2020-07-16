@@ -480,7 +480,7 @@ static void raw_string_print(struct log_msg *msg,
 
 static u32_t prefix_print(const struct log_output *log_output,
 			 u32_t flags, bool func_on, u32_t timestamp, u8_t level,
-			 u8_t domain_id, u16_t source_id)
+			 u8_t domain_id, u16_t source_id, struct k_thread *thread_id)
 {
 	u32_t length = 0U;
 
@@ -506,6 +506,20 @@ static u32_t prefix_print(const struct log_output *log_output,
 
 	if (stamp) {
 		length += timestamp_print(log_output, flags, timestamp);
+	}
+
+	if (thread_id != NULL) {
+		const char *thread_name = k_thread_name_get(thread_id);
+		if (thread_name != NULL) {
+			if (*thread_name!=0) {
+				length += print_formatted(log_output, "(%s)", thread_name);
+			}
+			else {
+				length += print_formatted(log_output, "(%p)", thread_id);
+			}
+		} else {
+			length += print_formatted(log_output, "(%p)", thread_id);
+		}
 	}
 
 	if (IS_ENABLED(CONFIG_LOG_BACKEND_NET) &&
@@ -542,6 +556,7 @@ void log_output_msg_process(const struct log_output *log_output,
 	u8_t level = (u8_t)log_msg_level_get(msg);
 	u8_t domain_id = (u8_t)log_msg_domain_id_get(msg);
 	u16_t source_id = (u16_t)log_msg_source_id_get(msg);
+	struct k_thread *thread_id = msg->hdr.thread_id;
 	bool raw_string = (level == LOG_LEVEL_INTERNAL_RAW_STRING);
 	int prefix_offset;
 
@@ -553,7 +568,7 @@ void log_output_msg_process(const struct log_output *log_output,
 
 	prefix_offset = raw_string ?
 			0 : prefix_print(log_output, flags, std_msg, timestamp,
-					 level, domain_id, source_id);
+					 level, domain_id, source_id, thread_id);
 
 	if (log_msg_is_std(msg)) {
 		std_print(msg, log_output);
@@ -590,6 +605,7 @@ void log_output_string(const struct log_output *log_output,
 	u8_t level = (u8_t)src_level.level;
 	u8_t domain_id = (u8_t)src_level.domain_id;
 	u16_t source_id = (u16_t)src_level.source_id;
+	struct k_thread *thread_id = NULL;
 	bool raw_string = (level == LOG_LEVEL_INTERNAL_RAW_STRING);
 
 	if (IS_ENABLED(CONFIG_LOG_MIPI_SYST_ENABLE) &&
@@ -601,7 +617,7 @@ void log_output_string(const struct log_output *log_output,
 
 	if (!raw_string) {
 		prefix_print(log_output, flags, true, timestamp,
-				level, domain_id, source_id);
+				level, domain_id, source_id, thread_id);
 	}
 
 #if !defined(CONFIG_NEWLIB_LIBC) && !defined(CONFIG_ARCH_POSIX) && \
@@ -634,6 +650,7 @@ void log_output_hexdump(const struct log_output *log_output,
 	u8_t level = (u8_t)src_level.level;
 	u8_t domain_id = (u8_t)src_level.domain_id;
 	u16_t source_id = (u16_t)src_level.source_id;
+	struct k_thread *thread_id = NULL;
 
 	if (IS_ENABLED(CONFIG_LOG_MIPI_SYST_ENABLE) &&
 	    flags & LOG_OUTPUT_FLAG_FORMAT_SYST) {
@@ -643,7 +660,7 @@ void log_output_hexdump(const struct log_output *log_output,
 	}
 
 	prefix_offset = prefix_print(log_output, flags, true, timestamp,
-				     level, domain_id, source_id);
+				     level, domain_id, source_id, thread_id);
 
 	/* Print metadata */
 	print_formatted(log_output, "%s", metadata);
