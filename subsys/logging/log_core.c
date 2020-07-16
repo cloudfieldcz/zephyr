@@ -188,6 +188,7 @@ static inline void msg_finalize(struct log_msg *msg,
 
 	msg->hdr.ids = src_level;
 	msg->hdr.timestamp = timestamp_func();
+	msg->hdr.thread_id = k_current_get();
 
 	atomic_inc(&buffered_cnt);
 

@@ -116,6 +116,7 @@ struct log_msg_hdr {
 	} params;
 	struct log_msg_ids ids; /*!< Identification part of the message.*/
 	u32_t timestamp;        /*!< Timestamp. */
+	struct k_thread *thread_id;
 };
 
 /** @brief Data part of log message. */
