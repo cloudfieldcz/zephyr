@@ -27,14 +27,15 @@ static struct sd_file_device_t sd_file_device = { .fd =  -1 ,
 
 static int char_out(u8_t *data, size_t length, void *ctx)
 {
-	struct sd_file_device_t *dev = (struct sd_file_device_t *)ctx;
-
-	if (dev->fd > 0) {
-		return 0;
-	}
-
-	int ret = ecb_write(dev->fd, data, length);
-	return ret;
+//	struct sd_file_device_t *dev = (struct sd_file_device_t *)ctx;
+//
+//	if (dev->fd > 0) {
+//		return 0;
+//	}
+//
+//	int ret = ecb_write(dev->fd, data, length);
+//	return ret;
+	return length;
 }
 
 static u8_t buf;
