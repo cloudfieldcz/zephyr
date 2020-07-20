@@ -114,4 +114,4 @@ const struct log_backend_api log_backend_sd_file_api = {
 	.dropped = IS_ENABLED(CONFIG_LOG_IMMEDIATE) ? NULL : dropped,
 };
 
-LOG_BACKEND_DEFINE(log_backend_sd_file, log_backend_sd_file_api, true);
+LOG_BACKEND_DEFINE(log_backend_sd_file, log_backend_sd_file_api, false);
