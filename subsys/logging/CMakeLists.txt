@@ -15,6 +15,11 @@ if(NOT CONFIG_LOG_MINIMAL)
   )
 
   zephyr_sources_ifdef(
+    CONFIG_LOG_SD_FILE
+    log_backend_sd_file.c
+  )
+
+  zephyr_sources_ifdef(
     CONFIG_LOG_CMDS
     log_cmds.c
   )
