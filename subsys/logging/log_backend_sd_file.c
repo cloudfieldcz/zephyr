@@ -25,22 +25,26 @@ static struct sd_file_device_t sd_file_device = { .fd =  -1 ,
 						  .log_file_name = 
 							  log_file_name  };
 
-static int char_out(u8_t *data, size_t length, void *ctx)
+static int sd_file_char_out(u8_t *data, size_t length, void *ctx)
 {
-//	struct sd_file_device_t *dev = (struct sd_file_device_t *)ctx;
-//
-//	if (dev->fd > 0) {
-//		return 0;
-//	}
-//
-//	int ret = ecb_write(dev->fd, data, length);
-//	return ret;
-	return length;
+	struct sd_file_device_t *dev = (struct sd_file_device_t *)ctx;
+
+	if (dev->fd < 0) {
+		return 0;
+	}
+
+	int ret = ecb_write(dev->fd, data, length);
+
+	if (ret<0) {
+		return 0;
+	}
+
+	return ret;
 }
 
 static u8_t buf;
 
-LOG_OUTPUT_DEFINE(log_output, char_out, &buf, 1);
+LOG_OUTPUT_DEFINE(log_output, sd_file_char_out, &buf, 1);
 
 static void put(const struct log_backend *const backend, struct log_msg *msg)
 {
