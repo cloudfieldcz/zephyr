@@ -12,6 +12,7 @@
 
 #include <fs/fs.h>
 #include <stdio.h>
+#include <ctype.h>
 
 static const u8_t log_dir_name[] = "/SD:/LOG";
 static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
@@ -32,13 +33,63 @@ struct sd_file_device_t {
 	u32_t log_tag_start;
 };
 
-static struct sd_file_device_t sd_file_device = { .log_dir_name = log_dir_name,
-						  .log_file_name =
-							  log_file_name,
-						  .log_file_fd_p = &log_file_fd,
-						  .log_file_open = false,
-						  .log_writen = 0,
-						  .log_tag_start = log_file_tag_max - 3 };
+static struct sd_file_device_t sd_file_device = {
+	.log_dir_name = log_dir_name,
+	.log_file_name = log_file_name,
+	.log_file_fd_p = &log_file_fd,
+	.log_file_open = false,
+	.log_writen = 0,
+	.log_tag_start = log_file_tag_max - 10
+};
+
+static int read_tag(u8_t name[], u32_t *tag)
+{
+	if (name[0] == 'L' && name[1] == '_' && isdigit(name[2]) &&
+	    isdigit(name[3]) && isdigit(name[4]) && isdigit(name[5]) &&
+	    isdigit(name[6]) && isdigit(name[7]) && name[8] == '.' &&
+	    name[9] == 'T' && name[10] == 'X' && name[11] == 'T' &&
+	    name[12] == 0) {
+		*tag = 666;    
+		return -1;
+	}
+
+	*tag = 555;
+	return 0;
+}
+
+static int read_last_log_tag(struct sd_file_device_t *dev)
+{
+	struct fs_dir_t dir;
+	volatile int res = fs_opendir(&dir, dev->log_dir_name);
+	if (res != 0) {
+		return -1;
+	}
+
+	struct fs_dirent entry;
+	bool read_dir = true;
+	u32_t max_tag = 0;
+	while (read_dir) {
+		res = fs_readdir(&dir, &entry);
+		if (res != 0) {
+			return -1;
+		}
+
+		if (entry.name[0] == 0) {
+			read_dir = false;
+		} else {
+			u32_t current_tag;
+			res = read_tag(entry.name, &current_tag);
+			if (res != 0) {
+				return -1;
+			}
+			if (max_tag < current_tag) {
+				max_tag = current_tag;
+			}
+		}
+	}
+	dev->log_tag_start = max_tag;
+	return 0;
+}
 
 static int sd_file_log_name_next(struct sd_file_device_t *dev,
 				 u8_t *log_file_name_next)
@@ -77,7 +128,7 @@ static int sd_file_check_file_size(struct sd_file_device_t *dev)
 		u8_t log_file_name_next[sizeof(log_file_name_template)];
 		memcpy(log_file_name_next, log_file_name_template,
 		       sizeof(log_file_name_template));
-		sd_file_log_name_next(dev,log_file_name_next);
+		sd_file_log_name_next(dev, log_file_name_next);
 		ret = fs_rename(dev->log_file_name, log_file_name_next);
 		if (ret != 0) {
 			goto sd_file_check_file_size_error;
@@ -149,6 +200,11 @@ static void log_backend_sd_file_init(void)
 			dev->log_file_open = false;
 			goto sd_file_init_end;
 		}
+	}
+
+	res = read_last_log_tag(dev);
+	if (res != 0) {
+		dev->log_tag_start = log_file_tag_max - 3;
 	}
 
 	res = fs_open(dev->log_file_fd_p, dev->log_file_name);
