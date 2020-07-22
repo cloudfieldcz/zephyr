@@ -13,6 +13,9 @@
 #include <fs/fs.h>
 
 static const u8_t log_file_name[] = "/SD:/L_LATEST.TXT";
+static const u8_t log_file_name_template[] = "/SD:/L_000000.TXT";
+static const size_t log_file_sync_size = 100;
+static const size_t log_file_max_size = 5 * 1024;
 static struct fs_file_t log_file_fd;
 
 struct sd_file_device_t {
@@ -28,6 +31,40 @@ static struct sd_file_device_t sd_file_device = { .log_file_name =
 						  .log_file_open = false,
 						  .log_writen = 0 };
 
+static int sd_file_check_file_size(struct sd_file_device_t *dev)
+{
+	struct fs_dirent entry;
+	volatile int ret = fs_stat(dev->log_file_name, &entry);
+
+	if (ret != 0) {
+		goto sd_file_check_file_size_error;
+	}
+
+	if (entry.size > log_file_max_size) {
+		dev->log_file_open = false;
+		int ret = fs_close(dev->log_file_fd_p);
+		if (ret != 0) {
+			goto sd_file_check_file_size_error;
+		}
+
+		ret = fs_rename(dev->log_file_name, log_file_name_template);
+		if (ret != 0) {
+			goto sd_file_check_file_size_error;
+		}
+
+		ret = fs_open(dev->log_file_fd_p, dev->log_file_name);
+		if (ret != 0) {
+			dev->log_file_open = false;
+			goto sd_file_check_file_size_error;
+		}
+		dev->log_file_open = true;
+	}
+
+	return 0;
+sd_file_check_file_size_error:
+	return -1;
+}
+
 static int sd_file_char_out(u8_t *data, size_t length, void *ctx)
 {
 	struct sd_file_device_t *dev = (struct sd_file_device_t *)ctx;
@@ -41,14 +78,17 @@ static int sd_file_char_out(u8_t *data, size_t length, void *ctx)
 		return 0;
 	}
 
-	if (dev->log_writen > 100) {
+	if (dev->log_writen > log_file_sync_size) {
 		int ret2 = fs_sync(dev->log_file_fd_p);
 		if (ret2 != 0) {
 			return 0;
 		}
-		dev->log_writen=0;
-	}
-	else {
+		dev->log_writen = 0;
+		ret2 = sd_file_check_file_size(dev);
+		if (ret2 != 0) {
+			return 0;
+		}
+	} else {
 		dev->log_writen++;
 	}
 
@@ -70,13 +110,12 @@ static void log_backend_sd_file_init(void)
 {
 	struct sd_file_device_t *dev = &sd_file_device;
 	volatile int res = fs_open(dev->log_file_fd_p, dev->log_file_name);
-
 	if (res != 0) {
+		dev->log_file_open = false;
 		goto sd_file_init_end;
 	}
 
 	res = fs_seek(dev->log_file_fd_p, 0, FS_SEEK_END);
-
 	if (res == 0) {
 		dev->log_file_open = true;
 	} else {
