@@ -17,6 +17,7 @@ static const u8_t log_dir_name[] = "/SD:/LOG";
 static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
 static const u8_t log_file_name_template[] = "/SD:/LOG/L_000000.TXT";
 static const size_t log_file_name_tag_offset = 11;
+static const size_t log_file_tag_max = 65000;
 
 static const size_t log_file_sync_size = 100;
 static const size_t log_file_max_size = 512;
@@ -37,12 +38,12 @@ static struct sd_file_device_t sd_file_device = { .log_dir_name = log_dir_name,
 						  .log_file_fd_p = &log_file_fd,
 						  .log_file_open = false,
 						  .log_writen = 0,
-						  .log_tag_start = 999997 };
+						  .log_tag_start = log_file_tag_max - 3 };
 
 static int sd_file_log_name_next(struct sd_file_device_t *dev,
 				 u8_t *log_file_name_next)
 {
-	if (dev->log_tag_start >= 999999) {
+	if (dev->log_tag_start >= log_file_tag_max) {
 		dev->log_tag_start = 1;
 	} else {
 		dev->log_tag_start++;
@@ -66,7 +67,7 @@ static int sd_file_check_file_size(struct sd_file_device_t *dev)
 		goto sd_file_check_file_size_error;
 	}
 
-	if (entry.size > log_file_max_size) {
+	if (entry.size >= log_file_max_size) {
 		dev->log_file_open = false;
 		int ret = fs_close(dev->log_file_fd_p);
 		if (ret != 0) {
