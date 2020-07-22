@@ -12,20 +12,23 @@
 
 #include <fs/fs.h>
 
-static const u8_t log_file_name[] = "/SD:/L_LATEST.TXT";
-static const u8_t log_file_name_template[] = "/SD:/L_000000.TXT";
+static const u8_t log_dir_name[] = "/SD:/LOG";
+static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
+static const u8_t log_file_name_template[] = "/SD:/LOG/L_000000.TXT";
 static const size_t log_file_sync_size = 100;
 static const size_t log_file_max_size = 5 * 1024;
 static struct fs_file_t log_file_fd;
 
 struct sd_file_device_t {
+	const u8_t *log_dir_name;
 	const u8_t *log_file_name;
 	struct fs_file_t *log_file_fd_p;
 	bool log_file_open;
 	size_t log_writen;
 };
 
-static struct sd_file_device_t sd_file_device = { .log_file_name =
+static struct sd_file_device_t sd_file_device = { .log_dir_name = log_dir_name,
+						  .log_file_name =
 							  log_file_name,
 						  .log_file_fd_p = &log_file_fd,
 						  .log_file_open = false,
@@ -109,7 +112,18 @@ static void put(const struct log_backend *const backend, struct log_msg *msg)
 static void log_backend_sd_file_init(void)
 {
 	struct sd_file_device_t *dev = &sd_file_device;
-	volatile int res = fs_open(dev->log_file_fd_p, dev->log_file_name);
+
+	struct fs_dirent entry;
+	volatile int res = fs_stat(dev->log_dir_name, &entry);
+	if (res != 0) {
+		volatile int res2 = fs_mkdir(dev->log_dir_name);
+		if (res2 != 0) {
+			dev->log_file_open = false;
+			goto sd_file_init_end;
+		}
+	}
+
+	res = fs_open(dev->log_file_fd_p, dev->log_file_name);
 	if (res != 0) {
 		dev->log_file_open = false;
 		goto sd_file_init_end;
