@@ -11,12 +11,15 @@
 #include <sys/stat.h>
 
 #include <fs/fs.h>
+#include <stdio.h>
 
 static const u8_t log_dir_name[] = "/SD:/LOG";
 static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
 static const u8_t log_file_name_template[] = "/SD:/LOG/L_000000.TXT";
+static const size_t log_file_name_tag_offset = 11;
+
 static const size_t log_file_sync_size = 100;
-static const size_t log_file_max_size = 5 * 1024;
+static const size_t log_file_max_size = 512;
 static struct fs_file_t log_file_fd;
 
 struct sd_file_device_t {
@@ -25,6 +28,7 @@ struct sd_file_device_t {
 	struct fs_file_t *log_file_fd_p;
 	bool log_file_open;
 	size_t log_writen;
+	u32_t log_tag_start;
 };
 
 static struct sd_file_device_t sd_file_device = { .log_dir_name = log_dir_name,
@@ -32,7 +36,26 @@ static struct sd_file_device_t sd_file_device = { .log_dir_name = log_dir_name,
 							  log_file_name,
 						  .log_file_fd_p = &log_file_fd,
 						  .log_file_open = false,
-						  .log_writen = 0 };
+						  .log_writen = 0,
+						  .log_tag_start = 999997 };
+
+static int sd_file_log_name_next(struct sd_file_device_t *dev,
+				 u8_t *log_file_name_next)
+{
+	if (dev->log_tag_start >= 999999) {
+		dev->log_tag_start = 1;
+	} else {
+		dev->log_tag_start++;
+	}
+
+	u8_t tmp_str[16];
+	sprintf(tmp_str, "%06u", dev->log_tag_start);
+	if (strlen(tmp_str) > 6) {
+		return -1;
+	}
+	strncpy(log_file_name_next + log_file_name_tag_offset, tmp_str, 6);
+	return 0;
+}
 
 static int sd_file_check_file_size(struct sd_file_device_t *dev)
 {
@@ -50,7 +73,11 @@ static int sd_file_check_file_size(struct sd_file_device_t *dev)
 			goto sd_file_check_file_size_error;
 		}
 
-		ret = fs_rename(dev->log_file_name, log_file_name_template);
+		u8_t log_file_name_next[sizeof(log_file_name_template)];
+		memcpy(log_file_name_next, log_file_name_template,
+		       sizeof(log_file_name_template));
+		sd_file_log_name_next(dev,log_file_name_next);
+		ret = fs_rename(dev->log_file_name, log_file_name_next);
 		if (ret != 0) {
 			goto sd_file_check_file_size_error;
 		}
