@@ -71,12 +71,19 @@ static void log_backend_sd_file_init(void)
 	struct sd_file_device_t *dev = &sd_file_device;
 	volatile int res = fs_open(dev->log_file_fd_p, dev->log_file_name);
 
+	if (res != 0) {
+		goto sd_file_init_end;
+	}
+
+	res = fs_seek(dev->log_file_fd_p, 0, FS_SEEK_END);
+
 	if (res == 0) {
 		dev->log_file_open = true;
 	} else {
 		dev->log_file_open = false;
 	}
 
+sd_file_init_end:
 	log_output_ctx_set(&log_output, dev);
 }
 
