@@ -13,6 +13,7 @@
 #include <fs/fs.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 static const u8_t log_dir_name[] = "/SD:/LOG";
 static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
@@ -42,18 +43,36 @@ static struct sd_file_device_t sd_file_device = {
 	.log_tag_start = log_file_tag_max - 10
 };
 
-static int read_tag(u8_t name[], u32_t *tag)
+static int read_tag(struct fs_dirent *entry, u32_t *tag)
 {
-	if (name[0] == 'L' && name[1] == '_' && isdigit(name[2]) &&
-	    isdigit(name[3]) && isdigit(name[4]) && isdigit(name[5]) &&
-	    isdigit(name[6]) && isdigit(name[7]) && name[8] == '.' &&
-	    name[9] == 'T' && name[10] == 'X' && name[11] == 'T' &&
-	    name[12] == 0) {
-		*tag = 666;    
+	if (!(entry->name[0] == 'L' && entry->name[1] == '_' &&
+	      isdigit((int)entry->name[2]) && isdigit((int)entry->name[3]) &&
+	      isdigit((int)entry->name[4]) && isdigit((int)entry->name[5]) &&
+	      isdigit((int)entry->name[6]) && isdigit((int)entry->name[7]) &&
+	      entry->name[8] == '.' && entry->name[9] == 'T' &&
+	      entry->name[10] == 'X' && entry->name[11] == 'T' &&
+	      entry->name[12] == 0)) {
+		*tag = 0;
 		return -1;
 	}
 
-	*tag = 555;
+	s32_t tag_tmp = 0;
+	char *end = NULL;
+	tag_tmp = strtol(&(entry->name[2]), &end, 10);
+	if (tag_tmp == LONG_MIN || tag_tmp == LONG_MAX) {
+		*tag = 0;
+		return -1;
+	} else if (end == &(entry->name[2])) {
+		*tag = 0;
+		return -1;
+	}
+ 
+	if (tag_tmp<0) {
+		*tag = 0;
+		return -1;
+	}
+ 
+	*tag=tag_tmp;
 	return 0;
 }
 
@@ -78,12 +97,11 @@ static int read_last_log_tag(struct sd_file_device_t *dev)
 			read_dir = false;
 		} else {
 			u32_t current_tag;
-			res = read_tag(entry.name, &current_tag);
-			if (res != 0) {
-				return -1;
-			}
-			if (max_tag < current_tag) {
-				max_tag = current_tag;
+			res = read_tag(&entry, &current_tag);
+			if (res == 0) {
+				if (max_tag < current_tag) {
+					max_tag = current_tag;
+				}
 			}
 		}
 	}
