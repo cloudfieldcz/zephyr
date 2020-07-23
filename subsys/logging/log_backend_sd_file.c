@@ -21,8 +21,8 @@ static const u8_t log_file_name_template[] = "/SD:/LOG/L_000000.TXT";
 static const size_t log_file_name_tag_offset = 11;
 static const size_t log_file_tag_max = 65000;
 
-static const size_t log_file_sync_size = 100;
-static const size_t log_file_max_size = 512;
+static const size_t log_file_sync_size = 512;
+static const size_t log_file_max_size = 5*1024;
 static struct fs_file_t log_file_fd;
 
 struct sd_file_device_t {
@@ -40,7 +40,7 @@ static struct sd_file_device_t sd_file_device = {
 	.log_file_fd_p = &log_file_fd,
 	.log_file_open = false,
 	.log_writen = 0,
-	.log_tag_start = log_file_tag_max - 10
+	.log_tag_start = 0
 };
 
 static int read_tag(struct fs_dirent *entry, u32_t *tag)
@@ -222,7 +222,7 @@ static void log_backend_sd_file_init(void)
 
 	res = read_last_log_tag(dev);
 	if (res != 0) {
-		dev->log_tag_start = log_file_tag_max - 3;
+		dev->log_tag_start = 0;
 	}
 
 	res = fs_open(dev->log_file_fd_p, dev->log_file_name);
