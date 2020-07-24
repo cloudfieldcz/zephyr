@@ -291,6 +291,11 @@ config LOG_BACKEND_UART
 	help
 	  When enabled backend is using UART to output logs.
 
+config LOG_SD_FILE
+	bool "Enable SD_FILE backend"
+	help
+	  When enabled backend is using SD_FILE to output logs.
+
 config LOG_BACKEND_UART_SYST_ENABLE
 	bool "Enable UART syst backend"
 	depends on LOG_BACKEND_UART
