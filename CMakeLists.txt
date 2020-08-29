@@ -7,6 +7,7 @@ target_include_directories(ELMFAT INTERFACE include)
 zephyr_library()
 zephyr_library_sources(
     ff.c
+    ffsystem.c
     zfs_diskio.c
     )
 zephyr_library_sources_ifdef(CONFIG_FS_FATFS_LFN
