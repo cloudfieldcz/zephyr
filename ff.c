@@ -21,6 +21,13 @@
 #include "ff.h"			/* Declarations of FatFs API */
 #include "diskio.h"		/* Declarations of device I/O functions */
 
+#if _MULTI_PARTITION		/* Multiple partition configuration */
+/* Volume - Partition resolution table */
+PARTITION VolToPart[_VOLUMES]={
+    {.pd=0,.pt=1},
+    {.pd=0,.pt=2}
+};
+#endif
 
 /*--------------------------------------------------------------------------
 
@@ -1270,7 +1277,7 @@ FRESULT remove_chain (	/* FR_OK(0):succeeded, !=0:error */
 #if _FS_EXFAT || _USE_TRIM
 		if (ecl + 1 == nxt) {	/* Is next cluster contiguous? */
 			ecl = nxt;
-		} else {				/* End of contiguous cluster block */ 
+		} else {				/* End of contiguous cluster block */
 #if _FS_EXFAT
 			if (fs->fs_type == FS_EXFAT) {
 				res = change_bitmap(fs, scl, ecl - scl + 1, 0);	/* Mark the cluster block 'free' on the bitmap */
@@ -1978,12 +1985,12 @@ FRESULT load_xdir (	/* FR_INT_ERR: invalid entry block */
 }
 
 
-#if !_FS_READONLY || _FS_RPATH != 0 
+#if !_FS_READONLY || _FS_RPATH != 0
 /*------------------------------------------------*/
 /* exFAT: Load the object's directory entry block */
 /*------------------------------------------------*/
 static
-FRESULT load_obj_dir (	
+FRESULT load_obj_dir (
 	DIR* dp,			/* Blank directory object to be used to access containing direcotry */
 	const _FDID* obj	/* Object with containing directory information */
 )
@@ -2869,7 +2876,7 @@ int get_ldnumber (		/* Returns logical drive number (-1:invalid drive) */
 		for (tt = *path; (UINT)*tt >= (_USE_LFN ? ' ' : '!') && *tt != ':'; tt++) ;	/* Find ':' in the path */
 		if (*tt == ':') {	/* If a ':' is exist in the path name */
 			tp = *path;
-			i = *tp++ - '0'; 
+			i = *tp++ - '0';
 			if (i < 10 && tp == tt) {	/* Is there a numeric drive id? */
 				if (i < _VOLUMES) {	/* If a drive id is found, get the value and strip it */
 					vol = (int)i;
@@ -2982,10 +2989,15 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 
 	fs->fs_type = 0;					/* Clear the file system object */
 	fs->drv = LD2PD(vol);				/* Bind the logical drive and a physical drive */
-	stat = disk_initialize(fs->drv);	/* Initialize the physical drive */
-	if (stat & STA_NOINIT) { 			/* Check if the initialization succeeded */
-		return FR_NOT_READY;			/* Failed to initialize due to no medium or hard error */
+
+    stat = disk_status(fs->drv);
+    if (stat & STA_NOINIT) { 			/* Check if the initialization succeeded */
+        stat = disk_initialize(fs->drv);	/* Initialize the physical drive */
+        if (stat & STA_NOINIT) { 			/* Check if the initialization succeeded */
+            return FR_NOT_READY;			/* Failed to initialize due to no medium or hard error */
+        }
 	}
+
 	if (!_FS_READONLY && mode && (stat & STA_PROTECT)) { /* Check disk write protection if needed */
 		return FR_WRITE_PROTECTED;
 	}

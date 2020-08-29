@@ -166,12 +166,15 @@
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
 
-#define _VOLUMES	8
+//#define _VOLUMES	8
+//MR
+#define _VOLUMES	2
 /* Number of volumes (logical drives) to be used. */
 
-
 #define _STR_VOLUME_ID	1
-#define _VOLUME_STRS	"RAM","NAND","CF","SD","SD2","USB","USB2","USB3"
+//#define _VOLUME_STRS	"RAM","NAND","CF","SD","SD2","USB","USB2","USB3"
+//MR
+#define _VOLUME_STRS	"SD","SD2"
 /* _STR_VOLUME_ID switches string support of volume ID.
 /  When _STR_VOLUME_ID is set to 1, also pre-defined strings can be used as drive
 /  number in the path name. _VOLUME_STRS defines the drive ID strings for each
@@ -179,7 +182,7 @@
 /  the drive ID strings are: A-Z and 0-9. */
 
 
-#define	_MULTI_PARTITION	0
+#define	_MULTI_PARTITION	1
 /* This option switches support of multi-partition on a physical drive.
 /  By default (0), each logical drive number is bound to the same physical drive
 /  number and only an FAT volume found on the physical drive will be mounted.
@@ -244,7 +247,7 @@
 /  defined by _NORTC_MON, _NORTC_MDAY and _NORTC_YEAR in local time.
 /  To enable timestamp function (_FS_NORTC = 0), get_fattime() function need to be
 /  added to the project to get current time form real-time clock. _NORTC_MON,
-/  _NORTC_MDAY and _NORTC_YEAR have no effect. 
+/  _NORTC_MDAY and _NORTC_YEAR have no effect.
 /  These options have no effect at read-only configuration (_FS_READONLY = 1). */
 
 
