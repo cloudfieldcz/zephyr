@@ -15,14 +15,21 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-static const u8_t log_dir_name[] = "/SD:/LOG";
-static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
-static const u8_t log_file_name_template[] = "/SD:/LOG/L_000000.TXT";
-static const size_t log_file_name_tag_offset = 11;
+//static const u8_t log_dir_name[] = "/SD:/LOG";
+//static const u8_t log_file_name[] = "/SD:/LOG/L_LATEST.TXT";
+//static const u8_t log_file_name_template[] = "/SD:/LOG/L_000000.TXT";
+//static const size_t log_file_name_tag_offset = 11;
+//static const size_t log_file_tag_max = 65000;
+
+static const u8_t log_dir_name[] = "/SD2:/LOG";
+static const u8_t log_file_name[] = "/SD2:/LOG/L_LATEST.TXT";
+static const u8_t log_file_name_template[] = "/SD2:/LOG/L_000000.TXT";
+static const size_t log_file_name_tag_offset = 12;
 static const size_t log_file_tag_max = 65000;
 
+
 static const size_t log_file_sync_size = 512;
-static const size_t log_file_max_size = 5*1024;
+static const size_t log_file_max_size = 1024*1024;
 static struct fs_file_t log_file_fd;
 
 struct sd_file_device_t {
