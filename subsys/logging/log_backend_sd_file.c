@@ -22,7 +22,7 @@ static const size_t log_file_name_tag_offset = 11;
 static const size_t log_file_tag_max = 65000;
 
 static const size_t log_file_sync_size = 512;
-static const size_t log_file_max_size = 5*1024;
+static const size_t log_file_max_size = 1024 * 1024;
 static struct fs_file_t log_file_fd;
 
 struct sd_file_device_t {
@@ -34,14 +34,13 @@ struct sd_file_device_t {
 	u32_t log_tag_start;
 };
 
-static struct sd_file_device_t sd_file_device = {
-	.log_dir_name = log_dir_name,
-	.log_file_name = log_file_name,
-	.log_file_fd_p = &log_file_fd,
-	.log_file_open = false,
-	.log_writen = 0,
-	.log_tag_start = 0
-};
+static struct sd_file_device_t sd_file_device = { .log_dir_name = log_dir_name,
+						  .log_file_name =
+							  log_file_name,
+						  .log_file_fd_p = &log_file_fd,
+						  .log_file_open = false,
+						  .log_writen = 0,
+						  .log_tag_start = 0 };
 
 static int read_tag(struct fs_dirent *entry, u32_t *tag)
 {
@@ -66,13 +65,13 @@ static int read_tag(struct fs_dirent *entry, u32_t *tag)
 		*tag = 0;
 		return -1;
 	}
- 
-	if (tag_tmp<0) {
+
+	if (tag_tmp < 0) {
 		*tag = 0;
 		return -1;
 	}
- 
-	*tag=tag_tmp;
+
+	*tag = tag_tmp;
 	return 0;
 }
 
@@ -165,35 +164,48 @@ sd_file_check_file_size_error:
 	return -1;
 }
 
+static u8_t sd_file_char_out_error=0;
 static int sd_file_char_out(u8_t *data, size_t length, void *ctx)
 {
+	if (sd_file_char_out_error!=0) {
+		return length;
+	}
+
 	struct sd_file_device_t *dev = (struct sd_file_device_t *)ctx;
 
 	if (dev->log_file_open == false) {
-		return 0;
+		goto sd_file_char_out_error;
 	}
 
 	int ret = fs_write(dev->log_file_fd_p, data, length);
 	if (ret < 0) {
-		return 0;
+		goto sd_file_char_out_error;
 	}
 
 	if (dev->log_writen > log_file_sync_size) {
 		int ret2 = fs_sync(dev->log_file_fd_p);
 		if (ret2 != 0) {
-			return 0;
+			goto sd_file_char_out_error;
 		}
 		dev->log_writen = 0;
 		ret2 = sd_file_check_file_size(dev);
 		if (ret2 != 0) {
-			return 0;
+			goto sd_file_char_out_error;
 		}
 	} else {
 		dev->log_writen++;
 	}
 
 	return ret;
-	//	return length;
+
+sd_file_char_out_error:
+#define LOG_SD_FILE_DROP_IF_ERROR
+#ifdef LOG_SD_FILE_DROP_IF_ERROR
+	sd_file_char_out_error=1;
+	return length;
+#else
+	return 0;
+#endif
 }
 
 static u8_t buf;
