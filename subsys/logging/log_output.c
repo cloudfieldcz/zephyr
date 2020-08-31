@@ -297,7 +297,7 @@ static void newline_print(const struct log_output *ctx, u32_t flags)
 	}
 }
 
-static void std_print(struct log_msg *msg,
+void std_print(struct log_msg *msg,
 		      const struct log_output *log_output)
 {
 	const char *str = log_msg_str_get(msg);
@@ -426,7 +426,7 @@ static void hexdump_line_print(const struct log_output *log_output,
 	}
 }
 
-static void hexdump_print(struct log_msg *msg,
+void hexdump_print(struct log_msg *msg,
 			  const struct log_output *log_output,
 			  int prefix_offset, u32_t flags)
 {
