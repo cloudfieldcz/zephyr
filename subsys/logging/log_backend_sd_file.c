@@ -208,9 +208,9 @@ sd_file_char_out_error:
 #endif
 }
 
-static u8_t buf;
+static u8_t buf[256];
 
-LOG_OUTPUT_DEFINE(log_output, sd_file_char_out, &buf, 1);
+LOG_OUTPUT_DEFINE(log_output, sd_file_char_out, &buf[0], sizeof(buf));
 
 static void put(const struct log_backend *const backend, struct log_msg *msg)
 {
