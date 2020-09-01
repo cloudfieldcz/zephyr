@@ -188,6 +188,13 @@ static inline void log_output_hostname_set(const struct log_output *log_output,
  */
 void log_output_timestamp_freq_set(u32_t freq);
 
+void hexdump_print(struct log_msg *msg,
+			  const struct log_output *log_output,
+			  int prefix_offset, u32_t flags);
+
+void std_print(struct log_msg *msg,
+		      const struct log_output *log_output);
+
 /**
  * @}
  */
