@@ -5966,6 +5966,25 @@ int bt_le_adv_update_data(const struct bt_data *ad, size_t ad_len,
 	return le_adv_update(ad, ad_len, sd, sd_len, connectable, use_name);
 }
 
+int bt_reinit_dev(void) {
+
+	if (!atomic_test_bit(bt_dev.flags, BT_DEV_READY)) {
+		return -EAGAIN;
+	}
+
+	if (atomic_test_bit(bt_dev.flags, BT_DEV_ADVERTISING)) {
+		return -EALREADY;
+	}
+
+	int err = 0;
+
+	bt_set_name(CONFIG_BT_DEVICE_NAME);
+	
+	err = bt_init();
+
+	return err;
+};
+
 int bt_le_adv_start_internal(const struct bt_le_adv_param *param,
 			     const struct bt_data *ad, size_t ad_len,
 			     const struct bt_data *sd, size_t sd_len,
@@ -5993,7 +6012,7 @@ int bt_le_adv_start_internal(const struct bt_le_adv_param *param,
 	if (!bt_le_adv_random_addr_check(param)) {
 		return -EINVAL;
 	}
-
+	
 	(void)memset(&set_param, 0, sizeof(set_param));
 
 	set_param.min_interval = sys_cpu_to_le16(param->interval_min);

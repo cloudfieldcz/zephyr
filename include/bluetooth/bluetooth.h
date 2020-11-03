@@ -53,6 +53,14 @@ extern "C" {
  */
 typedef void (*bt_ready_cb_t)(int err);
 
+/** @brief Turbyho
+ *
+ *  ReInit Bluetooth device.
+ *
+ *  @return Zero on success or (negative) error code otherwise.
+ */
+int bt_reinit_dev(void);
+
 /** @brief Enable Bluetooth
  *
  *  Enable Bluetooth. Must be the called before any calls that
